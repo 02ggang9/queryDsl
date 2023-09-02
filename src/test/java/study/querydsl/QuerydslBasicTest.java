@@ -6,7 +6,9 @@ import static study.querydsl.entity.QMember.*;
 import static study.querydsl.entity.QTeam.*;
 
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -407,7 +409,30 @@ public class QuerydslBasicTest {
 
   @Test
   public void constant() throws Exception {
+    List<Tuple> result = queryFactory
+        .select(member.username, Expressions.constant("A"))
+        .from(member)
+        .fetch();
 
+    for (Tuple tuple : result) {
+      System.out.println("tuple = " + tuple);
+    }
   }
+
+  @Test
+  public void concat() throws Exception {
+//   queryFactory.select(member.username.concat("_").concat(member.age)) 타입이 달라서 안됨
+    List<String> result = queryFactory
+        .select(member.username.concat("_").concat(member.age.stringValue()))
+        .from(member)
+        .where(member.username.eq("member1"))
+        .fetch();
+
+    for (String s : result) {
+      System.out.println("s = " + s);
+    }
+  }
+
+
 
 }
