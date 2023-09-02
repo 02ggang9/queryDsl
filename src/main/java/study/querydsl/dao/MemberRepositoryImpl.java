@@ -8,6 +8,9 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
@@ -39,6 +42,69 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
             ageLoe(condition.getAgeLoe())
         )
         .fetch();
+  }
+
+  // deprecated 후 아래의 Complex 메서드로 사용하면 된다.
+  @Override
+  public Page<MemberTeamDto> searchPageSimple(MemberSearchCondition condition, Pageable pageable) {
+    List<MemberTeamDto> results = queryFactory
+        .select(new QMemberTeamDto(
+            member.id.as("memberId"),
+            member.username,
+            member.age,
+            team.id.as("teamId"),
+            team.name.as("teamName")
+        ))
+        .from(member)
+        .leftJoin(member.team, team)
+        .where(
+            usernameEq(condition.getUsername()),
+            teamNameEq(condition.getTeamName()),
+            ageGeo(condition.getAgeGoe()),
+            ageLoe(condition.getAgeLoe())
+        )
+        .offset(pageable.getOffset())
+        .limit(pageable.getPageSize())
+        .fetch();
+
+    return null;
+  }
+
+  @Override
+  public Page<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
+    List<MemberTeamDto> results = queryFactory
+        .select(new QMemberTeamDto(
+            member.id.as("memberId"),
+            member.username,
+            member.age,
+            team.id.as("teamId"),
+            team.name.as("teamName")
+        ))
+        .from(member)
+        .leftJoin(member.team, team)
+        .where(
+            usernameEq(condition.getUsername()),
+            teamNameEq(condition.getTeamName()),
+            ageGeo(condition.getAgeGoe()),
+            ageLoe(condition.getAgeLoe())
+        )
+        .offset(pageable.getOffset())
+        .limit(pageable.getPageSize())
+        .fetch();
+
+    Long total = queryFactory
+        .select(member.count())
+        .from(member)
+        .leftJoin(member.team, team)
+        .where(
+            usernameEq(condition.getUsername()),
+            teamNameEq(condition.getTeamName()),
+            ageGeo(condition.getAgeGoe()),
+            ageLoe(condition.getAgeLoe())
+        )
+        .fetchOne();
+
+    return new PageImpl<>(results, pageable, total);
   }
 
   private BooleanExpression usernameEq(String username) {
