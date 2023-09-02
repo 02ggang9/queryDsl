@@ -650,4 +650,46 @@ public class QuerydslBasicTest {
     return usernameEq(usernameParam).and(ageEq(ageParam));
   }
 
+  // 아래의 벌크 쿼리가 날아가면 영속성 컨텍스트 무시하고 바로 update를 치기 때문에
+  // 영속성 컨텍스트와의 상태가 달라짐.
+  // 수정하고 select 해서 가져와도 영속성 컨텍스트에 값이 있기 때문에 가져온 값을 버림
+  // 원하던 결과랑 다를 수 있다!
+
+  // 그래서 벌크 연산 연산을 하면 em.flush()랑 em.clear()로 컨텍스트 비워야 한다.
+  @Test
+  public void bulkUpdate() throws Exception {
+    long count = queryFactory
+        .update(member)
+        .set(member.username, "비회원")
+        .where(member.age.lt(28))
+        .execute();
+
+    em.flush();
+    em.clear();
+
+    List<Member> result = queryFactory
+        .selectFrom(member)
+        .fetch();
+
+    for (Member member1 : result) {
+      System.out.println("member1 = " + member1);
+    }
+  }
+
+  @Test
+  public void bulkAdd() throws Exception {
+    long execute = queryFactory
+        .update(member)
+        .set(member.age, member.age.add(1))
+        .execute();
+  }
+
+  @Test
+  public void bulkDelete() throws Exception {
+    long count = queryFactory
+        .delete(member)
+        .where(member.age.gt(18))
+        .execute();
+  }
+
 }
