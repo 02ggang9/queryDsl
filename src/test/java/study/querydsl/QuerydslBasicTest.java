@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
@@ -563,6 +564,25 @@ public class QuerydslBasicTest {
 
     for (UserDto userDto : fetch) {
       System.out.println("userDto = " + userDto);
+    }
+  }
+
+  // 장점도 있지만 단점도 있음
+  // constructor -> 컴파일 오류를 못잡고 런타임 오류가 발생한다
+  // 위 방식에서 매개변수로 추가로 들어와도 컴파일 오류를 못잡지만 아래 방식은 가능
+  // 실무에서 고민거니는 컴파일 시점에서도 잡아주고 좋은데.
+  // Q 파일 만들어줘야 하고 쿼리DSL에 관한 의존성을 가지게 됨.
+  // DTO는 여러 레이어에서 사용됨(Controller, service) 등등..
+  // DTO가 DSL에 의존하게 되어 순수하지 않음.. 아키텍처에서 문제가 됨
+  @Test
+  public void findDtoByQueryProjection() throws Exception {
+    List<MemberDto> result = queryFactory
+        .select(new QMemberDto(member.username, member.age))
+        .from(member)
+        .fetch();
+
+    for (MemberDto memberDto : result) {
+      System.out.println("memberDto = " + memberDto);
     }
   }
 
