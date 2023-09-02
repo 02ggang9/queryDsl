@@ -5,12 +5,15 @@ import static study.querydsl.entity.QMember.member;
 import static study.querydsl.entity.QTeam.team;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.support.PageableUtils;
+import org.springframework.data.support.PageableExecutionUtils;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
@@ -70,6 +73,8 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
     return null;
   }
 
+  // 아래 질문 참고
+  // https://www.inflearn.com/course/lecture?courseSlug=querydsl-%EC%8B%A4%EC%A0%84&unitId=30151&category=questionDetail&tab=community&q=806452
   @Override
   public Page<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
     List<MemberTeamDto> results = queryFactory
@@ -92,7 +97,7 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
         .limit(pageable.getPageSize())
         .fetch();
 
-    Long total = queryFactory
+    JPAQuery<Long> countQuery = queryFactory
         .select(member.count())
         .from(member)
         .leftJoin(member.team, team)
@@ -101,10 +106,10 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
             teamNameEq(condition.getTeamName()),
             ageGeo(condition.getAgeGoe()),
             ageLoe(condition.getAgeLoe())
-        )
-        .fetchOne();
+        );
 
-    return new PageImpl<>(results, pageable, total);
+    return PageableExecutionUtils.getPage(results, pageable, countQuery::fetchOne);
+//    return new PageImpl<>(results, pageable, total);
   }
 
   private BooleanExpression usernameEq(String username) {
